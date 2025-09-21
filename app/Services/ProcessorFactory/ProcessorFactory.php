@@ -4,6 +4,7 @@ namespace App\Services\ProcessorFactory;
 
 use App\Services\CardProcessor\PackageAdapterInterface;
 use App\Support\Enums\FileType;
+use Symfony\Component\HttpKernel\Exception\UnprocessableEntityHttpException;
 
 class ProcessorFactory
 {
@@ -16,7 +17,7 @@ class ProcessorFactory
         $type = FileType::tryFrom($rawType);
 
         if (!$type) {
-            throw new \Exception('This type is not supported');
+            throw new UnprocessableEntityHttpException('This type is not supported');
         }
 
         return $this->packageAdapter->getFileProcessor($type);

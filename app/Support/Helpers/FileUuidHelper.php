@@ -16,7 +16,7 @@ class FileUuidHelper
 
         $file->storeAs('uploads/'.$uuid);
 
-        Cache::put($uuid, $url);
+        Cache::put($uuid->toString(), $url);
 
         return $uuid;
     }

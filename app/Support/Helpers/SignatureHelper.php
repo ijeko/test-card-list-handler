@@ -9,7 +9,7 @@ class SignatureHelper
 {
     public static function generate(string $url): string
     {
-        $method   = trim(parse_url($url)['path'], '/');
+        $method = trim(parse_url($url)['path'], '/');
 
         $filePath = "secret/service.key";
 

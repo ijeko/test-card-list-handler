@@ -1,6 +1,6 @@
 <?php
 
-namespace app\Services\CardProcessor\Spout\Handlers;
+namespace App\Services\CardProcessor\Spout\Handlers;
 
 use App\Services\CardProcessor\WriterInterface;
 use Box\Spout\Writer\Common\Creator\WriterEntityFactory;

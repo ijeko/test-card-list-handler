@@ -1,0 +1,62 @@
+version: "3.9"
+
+services:
+  php:
+    build:
+      context: ./docker/php
+      dockerfile: Dockerfile
+    volumes:
+      - ./:/var/www
+    networks:
+      - card-handler
+
+  nginx:
+    image: nginx:alpine
+    volumes:
+      - ./:/var/www
+      - ./docker/nginx/conf.d:/etc/nginx/conf.d
+    ports:
+      - "${APP_PORT}:80"
+    depends_on:
+      - php
+    networks:
+      - card-handler
+
+  queue-worker:
+    build:
+      context: ./docker/php
+      dockerfile: Dockerfile-worker
+    volumes:
+      - ./:/var/www
+    depends_on:
+      - php
+      - redis
+      - postgres
+    networks:
+      - card-handler
+    restart: always
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_DATABASE}
+    ports:
+      - ${DB_PORT}:5432
+    volumes:
+      - db:/var/lib/postgresql/data
+    networks:
+      - card-handler
+
+  redis:
+    image: redis:alpine
+    networks:
+      - card-handler
+
+networks:
+  card-handler:
+    driver: bridge
+
+volumes:
+  db:

@@ -2,10 +2,11 @@
 
 namespace App\Jobs;
 
+use App\Services\CardDeterminer\BaseCardDeterminer;
 use App\Services\CardProcessor\BaseFileProcessor;
-use App\Support\Helpers\SignatureHandler;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
 class ProcessCardsJob implements ShouldQueue
@@ -19,6 +20,9 @@ class ProcessCardsJob implements ShouldQueue
 
     public function handle(): void
     {
+        /** @var BaseCardDeterminer $cardDataDeterminer */
+        $cardDataDeterminer = app(BaseCardDeterminer::class);
+
         if (!Storage::exists('uploads/processed')) {
             Storage::createDirectory('uploads/processed');
         }
@@ -34,7 +38,14 @@ class ProcessCardsJob implements ShouldQueue
         $chunk = [];
 
         try {
-            foreach ($reader->read() as $row) {
+            foreach ($reader->read() as $index => $row) {
+                if ($index == 0) {
+                    $row[3] = 'Card type / bank';
+                } else {
+                    $cardData = $cardDataDeterminer->determine($row[2]);
+                    $row[3] = $cardData->cardType->value . '/' . $cardData->bank;
+                }
+
                 $chunk[] = $row;
 
                 if (count($chunk) == $chunkSize) {
@@ -43,8 +54,13 @@ class ProcessCardsJob implements ShouldQueue
                 }
             }
 
+            if (!empty($chunk)) {
+                $writer->write($chunk);
+            }
+
             $message = 'Success';
         } catch (\Exception $exception) {
+            Log::error(__METHOD__, ['error' => $exception->getMessage()]);
             $message = 'File process error: ' . $exception->getMessage();
         }
 

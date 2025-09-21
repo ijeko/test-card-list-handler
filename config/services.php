@@ -35,4 +35,8 @@ return [
         ],
     ],
 
+    'binlist' => [
+        'url' => env('BINLIST_BASE_URL'),
+    ]
+
 ];

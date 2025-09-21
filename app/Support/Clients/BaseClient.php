@@ -15,7 +15,7 @@ abstract class BaseClient
         $this->setClient();
     }
 
-    abstract public function setClient(): void;
+    abstract protected function setClient(): void;
 
     public function post(string $method, array $data, ?array $files = []): array
     {

@@ -3,12 +3,7 @@
 namespace App\Jobs;
 
 use App\Support\Clients\ServiceClient;
-use App\Support\DTO\Scoring\PreScoringRequestDTO;
-use App\Support\DTO\Scoring\ScoringRequestDTO;
-use App\Support\Enums\Customer\CustomerTagEnum;
-use App\Support\Helpers\CustomerTagHelper;
 use App\Support\Helpers\FileUuidHelper;
-use IFT\PhpLogger\Logger;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;

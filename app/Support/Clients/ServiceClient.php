@@ -7,7 +7,7 @@ use GuzzleHttp\Client;
 
 class ServiceClient extends BaseClient
 {
-    public function setClient(): void
+    protected function setClient(): void
     {
         $this->headers = [
             'Accept' => 'application/json',

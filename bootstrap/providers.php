@@ -1,6 +1,10 @@
 <?php
 
+use App\Providers\CardDeterminerServiceProvider;
+use App\Providers\FileProcessorServiceProvider;
+
 return [
     App\Providers\AppServiceProvider::class,
-    \App\Providers\FileProcessorServiceProvider::class,
+    FileProcessorServiceProvider::class,
+    CardDeterminerServiceProvider::class,
 ];

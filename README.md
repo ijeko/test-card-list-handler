@@ -1,61 +1,88 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Приложение для обработки XLSX файлов
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+## Описание
 
-## About Laravel
+Приложение принимает XLSX файл с указанной в ТЗ структурой, проверяет подпись и обрабатывает данные согласно ТЗ.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+Также заложена возможность для расширения функционала:
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- Можно легко добавлять пакеты для обработки файлов (либо использовать свои).
+- Можно легко добавлять обработчики для других типов файлов (например, CSV).
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+Приложение работает асинхронно: исходные файлы обрабатываются в джобах, после чего готовые файлы отправляются на указанный в реквесте эндпоинт, а файлы удаляются.
 
-## Learning Laravel
+> По ТЗ требуется использовать PostgreSQL, для этого поднят контейнер, но на практике БД не используется, так как для выполнения функций достаточно кэша. В БД могут писаться, например, зафейленные джобы.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+Для получения данных карты используется класс-заглушка, который умеет определять тип карты по номеру (банк при этом подставляется как `unknown`).  
+Дополнительно реализован альтернативный класс, работающий с API [binlist](https://binlist.net/), но в бесплатной версии доступно лишь несколько запросов в час, поэтому даже для тестов он не подходит.
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+---
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## Запуск для локальной разработки
 
-## Laravel Sponsors
+1. Скопировать `.env.example` в `.env`, указать доступы к БД, порты:
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+```bash
+cp .env.example .env
+```
+2. Собрать контейнеры:
+```bash
+   docker compose build
 
-### Premium Partners
+   docker compose up -d
+```
+3. Установить записимости и выполнить миграции:
+```bash
+docker compose exec php composer install
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+docker compose exec php php artisan key:generate
 
-## Contributing
+docker compose exec php php php artisan migrate
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+## Проверка функционала
+1. Сгенерировать серкретный ключ:
+```bash
+docker compose exec php php artisan key:generate-secret
+```
+2. Получить валидную подпись:
+```bash
+docker compose exec php php  artisan key:signature
+```
+3. Использовать полученные X-Url и X-Signature для отправки запроса через постман или curl
+```
+<?php
 
-## Code of Conduct
+$curl = curl_init();
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+curl_setopt_array($curl, array(
+  CURLOPT_URL => 'http://localhost:8089/api/cards/process',
+  CURLOPT_RETURNTRANSFER => true,
+  CURLOPT_ENCODING => '',
+  CURLOPT_MAXREDIRS => 10,
+  CURLOPT_TIMEOUT => 0,
+  CURLOPT_FOLLOWLOCATION => true,
+  CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+  CURLOPT_CUSTOMREQUEST => 'POST',
+  CURLOPT_POSTFIELDS => array('file'=> new CURLFILE('/path-to-file/uploaded.xlsx')),
+  CURLOPT_HTTPHEADER => array(
+    'Accept: application/json',
+    'Content-Type: multipart/form-data',
+    'X-Url: https://back-url.com/webhook/card-handler',
+    'X-Signature: k0EvV....'
+  ),
+));
 
-## Security Vulnerabilities
+$response = curl_exec($curl);
+curl_close($curl);
+echo $response;
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+Если все прошло успешно, в логах будет вывод:
+> [2025-09-22 06:10:35] local.DEBUG: App\Support\Clients\BaseClient::post {"method":"https://back-url.com/webhook/card-handler","data":{"message":"Success"}}
 
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Для просмотра файлов нужно закомментировать строки в SendProcessedFileJob.php:
+>File::delete($this->path);\
+>FileUuidHelper::delete($uuid);
+> 
+В этом случае исходный и обработанный файлы не будут удаляться.

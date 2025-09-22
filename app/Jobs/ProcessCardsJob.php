@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Services\CardDeterminer\BaseCardDeterminer;
 use App\Services\CardProcessor\BaseFileProcessor;
+use App\Support\Helpers\PathHelper;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Log;
@@ -23,14 +24,14 @@ class ProcessCardsJob implements ShouldQueue
         /** @var BaseCardDeterminer $cardDataDeterminer */
         $cardDataDeterminer = app(BaseCardDeterminer::class);
 
-        if (!Storage::exists('uploads/processed')) {
-            Storage::createDirectory('uploads/processed');
+        if (!Storage::exists(PathHelper::processedPath())) {
+            Storage::createDirectory(PathHelper::processedPath());
         }
 
         $chunkSize = $this->processor::chunkSize();
 
-        $readPath = Storage::path('uploads/' . $this->fileUuid);
-        $writePath = Storage::path('uploads/processed/' . $this->fileUuid);
+        $readPath = Storage::path(PathHelper::uploadPath() . $this->fileUuid);
+        $writePath = Storage::path(PathHelper::processedPath() . $this->fileUuid);
 
         $reader = $this->processor::setReader($readPath);
         $writer = $this->processor::setWriter($writePath);
@@ -38,15 +39,15 @@ class ProcessCardsJob implements ShouldQueue
         $chunk = [];
 
         try {
-            foreach ($reader->read() as $index => $row) {
-                if ($index == 0) {
-                    $row[3] = 'Card type / bank';
+            foreach ($reader->read() as $row) {
+                if ($row->isHeading()) {
+                    $row->cardType = 'Card type / bank';
                 } else {
-                    $cardData = $cardDataDeterminer->determine($row[2]);
-                    $row[3] = $cardData->cardType->value . '/' . $cardData->bank;
+                    $cardData = $cardDataDeterminer->determine($row->pan);
+                    $row->cardType = $cardData->cardType->value . '/' . $cardData->bank;
                 }
 
-                $chunk[] = $row;
+                $chunk[] = $row->toArray();
 
                 if (count($chunk) == $chunkSize) {
                     $writer->write($chunk);

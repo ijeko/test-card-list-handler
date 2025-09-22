@@ -3,9 +3,11 @@
 namespace Tests\Feature;
 
 use App\Http\Controllers\CardProcessController;
+use App\Support\Helpers\PathHelper;
 use App\Support\Helpers\SignatureHelper;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class CardProcessControllerTest extends TestCase
@@ -13,7 +15,16 @@ class CardProcessControllerTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
         Queue::fake();
+        config(['file-processor.path' => 'test/uploads']);
+    }
+
+    protected function tearDown(): void
+    {
+        Storage::deleteDirectory(PathHelper::uploadPath());
+
+        parent::tearDown();
     }
 
     public function testSendFileWithWrongSignatureShould403(): void

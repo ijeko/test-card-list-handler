@@ -2,7 +2,12 @@
 
 namespace App\Services\CardProcessor;
 
+use App\Support\Dtos\RowDataDto;
+
 interface ReaderInterface
 {
-    public function read(?int $chunk = null): \Traversable;
+    /**
+     * @return \Generator<int, RowDataDto>
+     */
+    public function read(?int $chunk = null): \Generator;
 }

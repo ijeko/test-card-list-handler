@@ -14,7 +14,7 @@ class FileUuidHelper
     {
         $uuid = Str::uuid();
 
-        $file->storeAs('uploads/'.$uuid);
+        $file->storeAs(PathHelper::uploadPath().$uuid);
 
         Cache::put($uuid->toString(), $url);
 

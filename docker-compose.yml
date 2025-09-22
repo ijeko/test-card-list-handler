@@ -25,13 +25,13 @@ services:
   queue-worker:
     build:
       context: ./docker/php
-      dockerfile: Dockerfile-worker
     volumes:
       - ./:/var/www
     depends_on:
       - php
       - redis
       - postgres
+    command: /usr/bin/supervisord -n -c /etc/supervisord.conf
     networks:
       - card-handler
     restart: always

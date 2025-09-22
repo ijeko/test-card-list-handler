@@ -13,18 +13,18 @@ class FileUuidHelper
     public static function storeWithUuid(UploadedFile $file, string $url): string
     {
         $uuid = Str::uuid();
+        $fileName = $uuid->toString().'.'.$file->getClientOriginalExtension();
+        $file->storeAs(PathHelper::uploadPath().$fileName);
 
-        $file->storeAs(PathHelper::uploadPath().$uuid);
+        Cache::put($fileName, $url);
 
-        Cache::put($uuid->toString(), $url);
-
-        return $uuid;
+        return $fileName;
     }
 
-    public static function delete(string $uuid): void
+    public static function delete(string $fileName): void
     {
-        Cache::forget($uuid);
-        $path = Storage::path('uploads/' . $uuid);
+        Cache::forget($fileName);
+        $path = Storage::path('uploads/' . $fileName);
 
         File::delete($path);
     }
